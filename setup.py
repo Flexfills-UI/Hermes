@@ -16,7 +16,7 @@ setup(
     description="This package is for using Flex Fills WebSocket communication with FlexFills trading services.",
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/yourusername/my_package',
+    url='https://github.com/Flexfills-UI/Hermes',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',

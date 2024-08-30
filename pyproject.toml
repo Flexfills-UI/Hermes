@@ -8,10 +8,10 @@ description = "This package is for using Flex Fills WebSocket communication with
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
 ]
-
+dynamic = ["dependencies"]
 [project.urls]
-Homepage = "https://github.com/pypa/sampleproject"
+Homepage = "https://github.com/Flexfills-UI/Hermes"
