@@ -95,7 +95,15 @@ assets_list = flexfills_api.get_instrument_list()
                     <li>globalInstrumentCd: list of currencies pair. string</li>
                     <li>clientOrderId: Id of the order. string</li>
                     <li>orderType: <strong>market</strong> - Market order, <strong>limit</strong> - Limit order. string</li>
-                    <li>timeInForce: string, optional, <strong>GTC</strong> - Good till cancelled (default, orders are in order book for 90 days) <strong>GTD</strong> - Good till day, will terminate at end of day 4:59PM NY TIME <strong>GTT</strong> - Good till time, alive until specific date (cannot exceed 90 days) <strong>FOK</strong> - Fill or Kill, Fill full amount or nothing immediately <strong>IOC</strong> - Immediate or Cancel, Fill any amount and cancel the rest immediately</li>
+                    <li>timeInForce: string, optional, 
+                        <ul>
+                            <li><strong>GTC</strong> - Good till cancelled (default, orders are in order book for 90 days)</li>
+                            <li><strong>GTD</strong> - Good till day, will terminate at end of day 4:59PM NY TIME</li>
+                            <li><strong>GTT</strong> - Good till time, alive until specific date (cannot exceed 90 days)</li>
+                            <li><strong>FOK</strong> - Fill or Kill, Fill full amount or nothing immediately</li>
+                            <li><strong>IOC</strong> - Immediate or Cancel, Fill any amount and cancel the rest immediately</li>
+                        </ul>
+                    </li>
                     <li>price: optional, Price only required for limit orders</li>
                     <li>amount: Quantity of the order</li>
                 </ul>
