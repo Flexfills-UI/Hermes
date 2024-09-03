@@ -73,8 +73,11 @@ assets_list = flexfills_api.get_instrument_list()
             <td></td>
         </tr>
         <tr>
-            <td><code class="highlighter-rouge">get_private_trades(instruments)</code></td>
-            <td><strong>instruments:</strong> list of pair of currencies.</td>
+            <td><code class="highlighter-rouge">get_private_trades(instruments, callback=None)</code></td>
+            <td>
+                <p><strong>instruments:</strong> list of pair of currencies.</p>
+                <p><strong>callback:</strong> Callback function for getting streaming data.</p>
+            </td>
             <td>Private trades subscription will provide a snapshot of currently open ACTIVE orders and then updates via WebSocket.</td>
         </tr>
         <tr>
@@ -82,7 +85,7 @@ assets_list = flexfills_api.get_instrument_list()
             <td>
                 <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId, exchangeOrderId
                 <ul>
-                    <li>globalInstrumentCd - list of currencies pair. string</li>
+                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
                     <li>clientOrderId - Id of the order. string</li>
                     <li>exchangeOrderId - exchangeOrderId. string</li>
                 </ul>
@@ -96,7 +99,7 @@ assets_list = flexfills_api.get_instrument_list()
             <td>
                 <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId, orderType, timeInForce, price, amount
                 <ul>
-                    <li>globalInstrumentCd: list of currencies pair. string</li>
+                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
                     <li>clientOrderId: Id of the order. string</li>
                     <li>orderType: <strong>market</strong> - Market order, <strong>limit</strong> - Limit order. string</li>
                     <li>timeInForce: string, optional, 
@@ -120,7 +123,7 @@ assets_list = flexfills_api.get_instrument_list()
             <td>
                 <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId or exchangeOrderId
                 <ul>
-                    <li>globalInstrumentCd: list of currencies pair. string</li>
+                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
                     <li>clientOrderId: Id of the order. string</li>
                     <li>exchangeOrderId: exchangeOrderId. string</li>
                 </ul>
@@ -133,7 +136,7 @@ assets_list = flexfills_api.get_instrument_list()
             <td>
                 <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId or exchangeOrderId
                 <ul>
-                    <li>globalInstrumentCd: list of currencies pair. string</li>
+                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
                     <li>clientOrderId: Id of the order. string</li>
                     <li>exchangeOrderId: exchangeOrderId. string</li>
                     <li>price: Price only required for limit orders</li>

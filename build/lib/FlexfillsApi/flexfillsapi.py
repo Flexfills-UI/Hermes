@@ -27,6 +27,12 @@ CH_PRV_BALANCE = 'BALANCE'
 CH_PRV_TRADE_PRIVATE = 'TRADE_PRIVATE'
 CH_PRV_TRADE_POSITIONS = 'TRADE_POSITIONS'
 
+# Define available constants
+
+ORDER_DIRECTIONS = ['SELL', 'BUY']
+ORDER_TYPES = ['MARKET', 'LIMIT']
+TIME_IN_FORCES = ['GTC', 'GTD', 'GTT', 'FOK', 'IOC']
+
 
 def initialize(username, password, is_test=False):
     auth_token = get_auth_token(username, password, is_test)
@@ -238,7 +244,7 @@ class FlexfillsApi:
 
         return resp
 
-    def get_private_trades(self, instruments):
+    def get_private_trades(self, instruments, callback=None):
         """ Private trades subscription will provide a snapshot of
         currently open ACTIVE orders and then updates via WebSocket.
 
@@ -263,7 +269,8 @@ class FlexfillsApi:
             ]
         }
 
-        resp = asyncio.get_event_loop().run_until_complete(self._send_message(message))
+        resp = asyncio.get_event_loop().run_until_complete(
+            self._send_message(message, callback))
 
         return resp
 
@@ -313,7 +320,8 @@ class FlexfillsApi:
 
         Parameters:
         ----------
-        order_data: The object of order, including globalInstrumentCd, clientOrderId, exchangeOrderId
+        order_data: The object of order, including globalInstrumentCd, clientOrderId, direction
+        orderType, timeInForce, price, amount
 
         Returns:
         -------
@@ -321,13 +329,33 @@ class FlexfillsApi:
 
         """
 
+        must_keys = ['globalInstrumentCd', 'clientOrderId', 'direction',
+                     'orderType', 'timeInForce', 'price', 'amount']
+
+        self._validate_payload(order_data, must_keys, [], 'order_data')
+
+        # Before sending the new order, request user must first be subscribed to desired pair, otherwise order will be rejected.
+
+        subscribe_message = {
+            "command": "SUBSCRIBE",
+            "signature": self._auth_token,
+            "channel": CH_PRV_TRADE_PRIVATE,
+            "channelArgs": [
+                {
+                    "name": "instrument",
+                    "value": f"[{str(order_data['globalInstrumentCd'])}]"
+                }
+            ]
+        }
+
         order_payload = {
             "class": "Order",
             "globalInstrumentCd": str(order_data['globalInstrumentCd']),
             "clientOrderId": str(order_data['clientOrderId']),
-            "direction": "SELL",
-            "orderType": str(order_data['orderType']),
-            "timeInForce": str(order_data['timeInForce']),
+            # Example value: "SELL" | "BUY"
+            "direction": str(order_data['direction']).upper(),
+            "orderType": str(order_data['orderType']).upper(),
+            "timeInForce": str(order_data['timeInForce']).upper(),
             "price": str(order_data['price']),
             "amount": str(order_data['amount']),
         }
@@ -339,7 +367,8 @@ class FlexfillsApi:
             "data": [order_payload]
         }
 
-        resp = asyncio.get_event_loop().run_until_complete(self._send_message(message))
+        resp = asyncio.get_event_loop().run_until_complete(
+            self._subscribe_and_send_message(subscribe_message, message))
 
         return resp
 
@@ -465,6 +494,35 @@ class FlexfillsApi:
         return resp
 
     # Protected Methods
+
+    async def _subscribe_and_send_message(self, subscriber, message, callback=None):
+        async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
+            await websocket.send(json.dumps(subscriber))
+
+            subscribe_response = await websocket.recv()
+            is_valid_subscribe, validated_subscribe_response = self._validate_response(
+                subscribe_response, subscriber)
+
+            if validated_subscribe_response['event'] == 'ERROR':
+                return validated_subscribe_response
+
+            validated_resp = ''
+
+            await websocket.send(json.dumps(message))
+
+            while True:
+                response = await websocket.recv()
+
+                is_valid, validated_resp = self._validate_response(
+                    response, message)
+
+                if callback:
+                    callback(validated_resp)
+                else:
+                    break
+
+            return validated_resp
+
     async def _send_message(self, message, callback=None):
         async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
             await websocket.send(json.dumps(message))
@@ -475,11 +533,13 @@ class FlexfillsApi:
             while True:
                 response = await websocket.recv()
 
-                is_valid, validated_resp = self._validate_response(response)
+                is_valid, validated_resp = self._validate_response(
+                    response, message)
 
                 if callback:
                     callback(validated_resp)
                 else:
+                    # break
                     if is_valid is True:
                         break
 
@@ -490,10 +550,52 @@ class FlexfillsApi:
 
             return validated_resp
 
-    def _validate_response(self, response):
+    def _validate_response(self, response, message):
         json_resp = json.loads(response)
+
+        if not message or 'command' not in message:
+            return True, json_resp
+
+        # if message.get('command') == 'SUBSCRIBE':
+        #     return True, json_resp
+
+        if json_resp['event'] == 'ERROR':
+            return True, json_resp
 
         if json_resp['event'] == 'ACK':
             return False, json_resp
 
         return True, json_resp
+
+    def _validate_payload(self, payload, must_keys, optional_keys, data_type=''):
+        is_valid = True
+        if must_keys:
+            for k in must_keys:
+                if k not in payload:
+                    raise Exception(f"{k} field should be in the {
+                                    data_type if data_type else 'payload data'}")
+
+        if optional_keys:
+            for k in optional_keys:
+                is_valid = is_valid and (k in payload)
+
+        if is_valid is False:
+            raise Exception(
+                f"the {data_type if data_type else 'payload data'} is not valid")
+
+        if 'direction' in payload:
+            if str(payload['direction']).upper() not in ORDER_DIRECTIONS:
+                raise Exception(
+                    f"the direction field is not valid in {data_type if data_type else 'payload data'}")
+
+        if 'orderType' in payload:
+            if str(payload['orderType']).upper() not in ORDER_TYPES:
+                raise Exception(
+                    f"the orderType field is not valid in {data_type if data_type else 'payload data'}")
+
+        if 'timeInForce' in payload:
+            if str(payload['timeInForce']).upper() not in TIME_IN_FORCES:
+                raise Exception(
+                    f"the timeInForce field is not valid in {data_type if data_type else 'payload data'}")
+
+        return is_valid
