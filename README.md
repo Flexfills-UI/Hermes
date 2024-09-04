@@ -97,7 +97,7 @@ assets_list = flexfills_api.get_instrument_list()
         <tr>
             <td><code class="highlighter-rouge">create_order(order_data)</code></td>
             <td>
-                <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId, orderType, timeInForce, price, amount
+                <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId, orderType, timeInForce, price, amount, exchangeName, orderSubType, requestType, tradeSide
                 <ul>
                     <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
                     <li>clientOrderId: Id of the order. string</li>
@@ -113,6 +113,10 @@ assets_list = flexfills_api.get_instrument_list()
                     </li>
                     <li>price: optional, Price only required for limit orders</li>
                     <li>amount: Quantity of the order</li>
+                    <li>exchangeName: Name of exchange to send order to, string, optional. required for direct orders</li>
+                    <li>orderSubType: optional, string, POST_ONLY, only required if client wishes to submit a passive order which does not immediately fill the order, in case of immediate fill, order will be rejected</li>
+                    <li>requestType: optional, string, Smart or Direct (SMART default) Direct orders need to have exchangeName</li>
+                    <li>tradeSide: optional, string, Side of the order Enum buy or sell</li>
                 </ul>
                 </p>
             </td>
@@ -137,10 +141,10 @@ assets_list = flexfills_api.get_instrument_list()
                 <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId or exchangeOrderId
                 <ul>
                     <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
-                    <li>clientOrderId: Id of the order. string</li>
-                    <li>exchangeOrderId: exchangeOrderId. string</li>
-                    <li>price: Price only required for limit orders</li>
-                    <li>amount: Quantity of the order</li>
+                    <li>clientOrderId: Id of the account. string</li>
+                    <li>exchangeOrderId: clientOrdId. string</li>
+                    <li>price: If price is not passed in, then it’s not modified, string</li>
+                    <li>amount: If price is not passed in, then it’s not modified, string</li>
                 </ul>
                 </p>
             </td>

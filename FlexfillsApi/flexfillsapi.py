@@ -330,9 +330,18 @@ class FlexfillsApi:
         """
 
         must_keys = ['globalInstrumentCd', 'clientOrderId', 'direction',
-                     'orderType', 'timeInForce', 'price', 'amount']
+                     'orderType', 'amount']
+
+        optional_keys = ['exchangeName', 'orderSubType', 'price',
+                         'timeInForce', 'requestType', 'tradeSide']
 
         self._validate_payload(order_data, must_keys, [], 'order_data')
+
+        if str(order_data['orderType']).upper() == 'LIMIT' and 'price' not in order_data:
+            raise Exception("Price should be included in order_data.")
+
+        if str(order_data.get('requestType', '')).upper() == 'DIRECT' and 'exchangeName' not in order_data:
+            raise Exception("Direct orders need to have exchangeName.")
 
         # Before sending the new order, request user must first be subscribed to desired pair, otherwise order will be rejected.
 
@@ -355,10 +364,12 @@ class FlexfillsApi:
             # Example value: "SELL" | "BUY"
             "direction": str(order_data['direction']).upper(),
             "orderType": str(order_data['orderType']).upper(),
-            "timeInForce": str(order_data['timeInForce']).upper(),
-            "price": str(order_data['price']),
             "amount": str(order_data['amount']),
         }
+
+        for okey in optional_keys:
+            if okey in order_data:
+                order_payload[okey] = str(order_data.get(okey))
 
         message = {
             "command": "CREATE",
@@ -398,19 +409,24 @@ class FlexfillsApi:
         return resp
 
     def modify_order(self, order_data):
+        order_payload = {
+            "class": "Order",
+            "globalInstrumentCd": str(order_data['globalInstrumentCd']),
+            "orderId": str(order_data['orderId']),
+            "exchangeOrderId": str(order_data['exchangeOrderId'])
+        }
+
+        if 'price' in order_data:
+            order_data['price'] = str(order_data['price'])
+
+        if 'amount' in order_data:
+            order_data['amount'] = str(order_data['amount'])
+
         message = {
             "command": "MODIFY",
             "signature": self._auth_token,
             "channel": CH_PRV_TRADE_PRIVATE,
-            "data": [
-                {
-                    "class": "Order",
-                    "globalInstrumentCd": str(order_data['globalInstrumentCd']),
-                    "orderId": str(order_data['orderId']),
-                    "price": str(order_data['price']),
-                    "amount": str(order_data['amount']),
-                }
-            ]
+            "data": [order_payload]
         }
 
         resp = asyncio.get_event_loop().run_until_complete(self._send_message(message))

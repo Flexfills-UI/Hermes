@@ -19,8 +19,21 @@ order_data = {
     "direction": "SELL",
     "orderType": "LIMIT",
     "timeInForce": "GTC",
-    "price": "0.215",
+    # "price": "0.215",
     "amount": "1.0"
+}
+
+direct_order_data = {
+    "globalInstrumentCd": "BTC/USD",
+    "exchangeName": "BITFINEX",
+    "requestType": "DIRECT",
+    "clientOrderId": "unique_order_id_005",
+    "orderType": "LIMIT",
+    "direction": "SELL",
+    "timeInForce": "GTC",
+    "amount": "0.001",
+    "clientId": "100000",
+    "price": "58000"
 }
 
 
@@ -37,10 +50,10 @@ def main():
     # resp = flexfills.subscribe_order_books(["BTC/USDT"])
     # resp = flexfills.get_trade_positions()
 
-    # resp = flexfills.create_order(order_data)
+    resp = flexfills.create_order(direct_order_data)
     # resp = flexfills.get_balance(currencies)
 
-    resp = flexfills.get_private_trades(instruments, get_order_books_stream)
+    # resp = flexfills.get_private_trades(instruments, get_order_books_stream)
 
     print(resp)
 
