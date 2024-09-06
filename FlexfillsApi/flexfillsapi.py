@@ -329,19 +329,19 @@ class FlexfillsApi:
 
         """
 
-        must_keys = ['globalInstrumentCd', 'clientOrderId', 'direction',
-                     'orderType', 'amount']
+        required_keys = ['globalInstrumentCd',
+                         'direction', 'orderType', 'amount']
 
         optional_keys = ['exchangeName', 'orderSubType', 'price',
-                         'timeInForce', 'requestType', 'tradeSide']
+                         'clientOrderId', 'timeInForce', 'tradeSide']
 
-        self._validate_payload(order_data, must_keys, [], 'order_data')
+        self._validate_payload(order_data, required_keys, [], 'order_data')
 
         if str(order_data['orderType']).upper() == 'LIMIT' and 'price' not in order_data:
             raise Exception("Price should be included in order_data.")
 
-        if str(order_data.get('requestType', '')).upper() == 'DIRECT' and 'exchangeName' not in order_data:
-            raise Exception("Direct orders need to have exchangeName.")
+        # if str(order_data.get('requestType', '')).upper() == 'DIRECT' and 'exchangeName' not in order_data:
+        #     raise Exception("Direct orders need to have exchangeName.")
 
         # Before sending the new order, request user must first be subscribed to desired pair, otherwise order will be rejected.
 
@@ -360,8 +360,6 @@ class FlexfillsApi:
         order_payload = {
             "class": "Order",
             "globalInstrumentCd": str(order_data['globalInstrumentCd']),
-            "clientOrderId": str(order_data['clientOrderId']),
-            # Example value: "SELL" | "BUY"
             "direction": str(order_data['direction']).upper(),
             "orderType": str(order_data['orderType']).upper(),
             "amount": str(order_data['amount']),
@@ -417,10 +415,10 @@ class FlexfillsApi:
         }
 
         if 'price' in order_data:
-            order_data['price'] = str(order_data['price'])
+            order_payload['price'] = str(order_data['price'])
 
         if 'amount' in order_data:
-            order_data['amount'] = str(order_data['amount'])
+            order_payload['amount'] = str(order_data['amount'])
 
         message = {
             "command": "MODIFY",
@@ -583,10 +581,10 @@ class FlexfillsApi:
 
         return True, json_resp
 
-    def _validate_payload(self, payload, must_keys, optional_keys, data_type=''):
+    def _validate_payload(self, payload, required_keys, optional_keys, data_type=''):
         is_valid = True
-        if must_keys:
-            for k in must_keys:
+        if required_keys:
+            for k in required_keys:
                 if k not in payload:
                     raise Exception(f"{k} field should be in the {
                                     data_type if data_type else 'payload data'}")
