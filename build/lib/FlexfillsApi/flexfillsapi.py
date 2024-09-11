@@ -274,12 +274,11 @@ class FlexfillsApi:
 
         return resp
 
-    def get_open_orders_list(self, order_data, instruments):
+    def get_open_orders_list(self, instruments=None):
         """ Get current list of open orders. One time request/response.
 
         Parameters:
         ----------
-        order_data: The object of order, including globalInstrumentCd, clientOrderId, exchangeOrderId
 
         Returns:
         -------
@@ -291,27 +290,23 @@ class FlexfillsApi:
             "command": "GET",
             "signature": self._auth_token,
             "channel": CH_PRV_TRADE_PRIVATE,
-            "channelArgs": [
-                {
-                    "name": "category",
-                    "value": "ACTIVE_ORDERS"
-                },
-                {
-                    "name": "instrument",
-                    "value": f"[{', '.join(instruments)}]"
-                }
-            ],
-            "data": [
-                {
-                    "class": "Order",
-                    "globalInstrumentCd": str(order_data['globalInstrumentCd']),
-                    "clientOrderId": str(order_data['clientOrderId']),
-                    "exchangeOrderId": str(order_data['exchangeOrderId'])
-                }
-            ]
         }
 
-        resp = asyncio.get_event_loop().run_until_complete(self._send_message(message))
+        channel_args = [{
+            "name": "category",
+            "value": "ACTIVE_ORDERS"
+        }]
+
+        if instruments:
+            channel_args.append({
+                "name": "instrument",
+                "value": f"[{', '.join(instruments)}]"
+            })
+
+        message["channelArgs"] = channel_args
+
+        resp = asyncio.get_event_loop().run_until_complete(
+            self._send_message(message))
 
         return resp
 
@@ -537,7 +532,7 @@ class FlexfillsApi:
 
             return validated_resp
 
-    async def _send_message(self, message, callback=None):
+    async def _send_message(self, message, callback=None, is_onetime=False):
         async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
             await websocket.send(json.dumps(message))
 
@@ -553,7 +548,9 @@ class FlexfillsApi:
                 if callback:
                     callback(validated_resp)
                 else:
-                    # break
+                    if is_onetime is True:
+                        break
+
                     if is_valid is True:
                         break
 

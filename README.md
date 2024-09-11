@@ -81,16 +81,9 @@ assets_list = flexfills_api.get_instrument_list()
             <td>Private trades subscription will provide a snapshot of currently open ACTIVE orders and then updates via WebSocket.</td>
         </tr>
         <tr>
-            <td><code class="highlighter-rouge">get_open_orders_list(order_data, instruments)</code></td>
+            <td><code class="highlighter-rouge">get_open_orders_list(instruments)</code></td>
             <td>
-                <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId, exchangeOrderId
-                <ul>
-                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
-                    <li>clientOrderId - Id of the order. string</li>
-                    <li>exchangeOrderId - exchangeOrderId. string</li>
-                </ul>
-                </p>
-                <p><strong>instruments:</strong> list of pair of currencies.</p>
+                <p><strong>instruments:</strong> list of pair of currencies. optional</p>
             </td>
             <td>Get current list of open orders. One time request/response.</td>
         </tr>
