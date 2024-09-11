@@ -372,14 +372,14 @@ class FlexfillsApi:
         }
 
         resp = asyncio.get_event_loop().run_until_complete(
-            self._subscribe_and_send_message(subscribe_message, message))
+            self._subscribe_and_send_message(subscribe_message, message, None, True))
 
         return resp
 
     def cancel_order(self, order_data):
-        required_keys = ['globalInstrumentCd']
+        # required_keys = ['globalInstrumentCd']
 
-        self._validate_payload(order_data, required_keys, [], 'order_data')
+        # self._validate_payload(order_data, required_keys, [], 'order_data')
 
         subscribe_message = {
             "command": "SUBSCRIBE",
@@ -521,7 +521,7 @@ class FlexfillsApi:
 
     # Protected Methods
 
-    async def _subscribe_and_send_message(self, subscriber, message, callback=None):
+    async def _subscribe_and_send_message(self, subscriber, message, callback=None, is_onetime=False):
         async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
             await websocket.send(json.dumps(subscriber))
 
@@ -545,7 +545,11 @@ class FlexfillsApi:
                 if callback:
                     callback(validated_resp)
                 else:
-                    break
+                    if is_onetime is True:
+                        break
+
+                    if is_valid is True:
+                        break
 
             return validated_resp
 

@@ -66,9 +66,9 @@ def main():
     # resp = flexfills.subscribe_order_books(["BTC/USDT"])
     # resp = flexfills.get_trade_positions()
 
-    # resp = flexfills.create_order(direct_order_data)
+    resp = flexfills.create_order(direct_order_data)
     # resp = flexfills.get_open_orders_list(['BTC/USDT'])
-    resp = flexfills.cancel_order(cancel_order_data)
+    # resp = flexfills.cancel_order(cancel_order_data)
     # resp = flexfills.get_balance(currencies)
 
     # resp = flexfills.get_private_trades(instruments, get_order_books_stream)
