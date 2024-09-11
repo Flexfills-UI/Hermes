@@ -377,6 +377,22 @@ class FlexfillsApi:
         return resp
 
     def cancel_order(self, order_data):
+        required_keys = ['globalInstrumentCd']
+
+        self._validate_payload(order_data, required_keys, [], 'order_data')
+
+        subscribe_message = {
+            "command": "SUBSCRIBE",
+            "signature": self._auth_token,
+            "channel": CH_PRV_TRADE_PRIVATE,
+            "channelArgs": [
+                {
+                    "name": "instrument",
+                    "value": f"[{str(order_data['globalInstrumentCd'])}]"
+                }
+            ]
+        }
+
         order_payload = {
             "class": "Order",
             "globalInstrumentCd": str(order_data['globalInstrumentCd']),
@@ -386,7 +402,7 @@ class FlexfillsApi:
             order_payload['orderId'] = str(order_data['orderId'])
         elif 'exchangeOrderId' in order_data:
             order_payload['exchangeOrderId'] = str(
-                order_payload['exchangeOrderId'])
+                order_data['exchangeOrderId'])
         else:
             raise Exception('orderId or exchangeOrderId is missing.')
 
@@ -397,7 +413,8 @@ class FlexfillsApi:
             "data": [order_payload]
         }
 
-        resp = asyncio.get_event_loop().run_until_complete(self._send_message(message))
+        resp = asyncio.get_event_loop().run_until_complete(
+            self._subscribe_and_send_message(subscribe_message, message))
 
         return resp
 

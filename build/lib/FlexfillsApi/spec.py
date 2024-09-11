@@ -36,6 +36,22 @@ direct_order_data = {
     "price": "58000"
 }
 
+cancel_order_data = {
+    "class": "Order",
+    "exchange": "HUOBI",
+    "globalInstrumentCd": "BTC/USDT",
+    "clientOrderId": "11726077295786",
+    "direction": "SELL",
+    "orderType": "LIMIT",
+    "price": 58000.0,
+    "amount": 0.01,
+    "orderStatus": "SUBMITTED",
+    "exchangeOrderId": "1150093430133608",
+    "filledPrice": 0.0,
+    "filledAmount": 0.0,
+    "orderDateTime": "2024-09-11T17:54:55Z"
+}
+
 
 def get_order_books_stream(resp):
     print(resp)
@@ -51,7 +67,8 @@ def main():
     # resp = flexfills.get_trade_positions()
 
     # resp = flexfills.create_order(direct_order_data)
-    resp = flexfills.get_open_orders_list()
+    # resp = flexfills.get_open_orders_list(['BTC/USDT'])
+    resp = flexfills.cancel_order(cancel_order_data)
     # resp = flexfills.get_balance(currencies)
 
     # resp = flexfills.get_private_trades(instruments, get_order_books_stream)
