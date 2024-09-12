@@ -45,7 +45,8 @@ cancel_order_data = {
     "timeInForce": "GTC",
     "price": "55000",
     "amount": "0.002",
-    "exchange": "FLEXFILLS"
+    "exchange": "FLEXFILLS",
+    "timeInForce": None
 }
 
 

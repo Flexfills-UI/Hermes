@@ -621,7 +621,9 @@ class FlexfillsApi:
                     f"the orderType field is not valid in {data_type if data_type else 'payload data'}")
 
         if 'timeInForce' in payload:
-            if str(payload['timeInForce']).upper() in TIME_IN_FORCES:
+            if payload.get('timeInForce') is None:
+                valid_data['timeInForce'] = 'GTC'
+            elif str(payload['timeInForce']).upper() in TIME_IN_FORCES:
                 valid_data['timeInForce'] = str(payload['timeInForce']).upper()
             else:
                 raise Exception(
