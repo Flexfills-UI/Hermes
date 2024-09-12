@@ -30,7 +30,7 @@ CH_PRV_TRADE_POSITIONS = 'TRADE_POSITIONS'
 # Define available constants
 
 ORDER_DIRECTIONS = ['SELL', 'BUY']
-ORDER_TYPES = ['MARKET', 'LIMIT']
+ORDER_TYPES = ['MARKET', 'LIMIT', 'POST_ONLY']
 TIME_IN_FORCES = ['GTC', 'GTD', 'GTT', 'FOK', 'IOC']
 
 
@@ -377,9 +377,13 @@ class FlexfillsApi:
         return resp
 
     def cancel_order(self, order_data):
-        # required_keys = ['globalInstrumentCd']
+        required_keys = ['globalInstrumentCd', 'clientOrderId', 'direction',
+                         'orderType', 'timeInForce', 'price', 'amount', 'exchange']
 
-        # self._validate_payload(order_data, required_keys, [], 'order_data')
+        valid_data = self._validate_payload(
+            order_data, required_keys, [], 'order_data')
+
+        valid_data['class'] = "Order"
 
         subscribe_message = {
             "command": "SUBSCRIBE",
@@ -393,24 +397,11 @@ class FlexfillsApi:
             ]
         }
 
-        order_payload = {
-            "class": "Order",
-            "globalInstrumentCd": str(order_data['globalInstrumentCd']),
-        }
-
-        if 'orderId' in order_data:
-            order_payload['orderId'] = str(order_data['orderId'])
-        elif 'exchangeOrderId' in order_data:
-            order_payload['exchangeOrderId'] = str(
-                order_data['exchangeOrderId'])
-        else:
-            raise Exception('orderId or exchangeOrderId is missing.')
-
         message = {
             "command": "CANCEL",
             "signature": self._auth_token,
             "channel": CH_PRV_TRADE_PRIVATE,
-            "data": [order_payload]
+            "data": [valid_data]
         }
 
         resp = asyncio.get_event_loop().run_until_complete(
@@ -600,34 +591,40 @@ class FlexfillsApi:
         return True, json_resp
 
     def _validate_payload(self, payload, required_keys, optional_keys, data_type=''):
-        is_valid = True
+        valid_data = {}
+
         if required_keys:
             for k in required_keys:
-                if k not in payload:
+                if k in payload:
+                    valid_data[k] = str(payload.get(k))
+                else:
                     raise Exception(f"{k} field should be in the {
                                     data_type if data_type else 'payload data'}")
 
         if optional_keys:
             for k in optional_keys:
-                is_valid = is_valid and (k in payload)
-
-        if is_valid is False:
-            raise Exception(
-                f"the {data_type if data_type else 'payload data'} is not valid")
+                if k in payload:
+                    valid_data[k] = str(payload.get(k))
 
         if 'direction' in payload:
-            if str(payload['direction']).upper() not in ORDER_DIRECTIONS:
+            if str(payload['direction']).upper() in ORDER_DIRECTIONS:
+                valid_data['direction'] = str(payload['direction']).upper()
+            else:
                 raise Exception(
                     f"the direction field is not valid in {data_type if data_type else 'payload data'}")
 
         if 'orderType' in payload:
-            if str(payload['orderType']).upper() not in ORDER_TYPES:
+            if str(payload['orderType']).upper() in ORDER_TYPES:
+                valid_data['orderType'] = str(payload['orderType']).upper()
+            else:
                 raise Exception(
                     f"the orderType field is not valid in {data_type if data_type else 'payload data'}")
 
         if 'timeInForce' in payload:
-            if str(payload['timeInForce']).upper() not in TIME_IN_FORCES:
+            if str(payload['timeInForce']).upper() in TIME_IN_FORCES:
+                valid_data['timeInForce'] = str(payload['timeInForce']).upper()
+            else:
                 raise Exception(
                     f"the timeInForce field is not valid in {data_type if data_type else 'payload data'}")
 
-        return is_valid
+        return valid_data
