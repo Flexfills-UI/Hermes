@@ -324,15 +324,16 @@ class FlexfillsApi:
 
         """
 
-        required_keys = ['globalInstrumentCd',
+        required_keys = ['globalInstrumentCd', 'exchange',
                          'direction', 'orderType', 'amount']
 
-        optional_keys = ['exchangeName', 'orderSubType', 'price',
-                         'clientOrderId', 'timeInForce', 'tradeSide']
+        optional_keys = ['exchangeName', 'orderSubType',
+                         'price', 'clientOrderId', 'timeInForce', 'tradeSide']
 
-        self._validate_payload(order_data, required_keys, [], 'order_data')
+        valid_data = self._validate_payload(
+            order_data, required_keys, optional_keys, 'order_data')
 
-        if str(order_data['orderType']).upper() == 'LIMIT' and 'price' not in order_data:
+        if valid_data['orderType'] == 'LIMIT' and 'price' not in valid_data:
             raise Exception("Price should be included in order_data.")
 
         # if str(order_data.get('requestType', '')).upper() == 'DIRECT' and 'exchangeName' not in order_data:
@@ -347,32 +348,22 @@ class FlexfillsApi:
             "channelArgs": [
                 {
                     "name": "instrument",
-                    "value": f"[{str(order_data['globalInstrumentCd'])}]"
+                    "value": f"[{str(valid_data['globalInstrumentCd'])}]"
                 }
             ]
         }
 
-        order_payload = {
-            "class": "Order",
-            "globalInstrumentCd": str(order_data['globalInstrumentCd']),
-            "direction": str(order_data['direction']).upper(),
-            "orderType": str(order_data['orderType']).upper(),
-            "amount": str(order_data['amount']),
-        }
-
-        for okey in optional_keys:
-            if okey in order_data:
-                order_payload[okey] = str(order_data.get(okey))
+        valid_data['class'] = 'Order'
 
         message = {
             "command": "CREATE",
             "signature": self._auth_token,
             "channel": CH_PRV_TRADE_PRIVATE,
-            "data": [order_payload]
+            "data": [valid_data]
         }
 
         resp = asyncio.get_event_loop().run_until_complete(
-            self._subscribe_and_send_message(subscribe_message, message, None, True))
+            self._subscribe_and_send_message(subscribe_message, message, None))
 
         return resp
 
@@ -530,7 +521,7 @@ class FlexfillsApi:
             while True:
                 response = await websocket.recv()
 
-                is_valid, validated_resp = self._validate_response(
+                is_valid, validated_resp = self._validate_subscribe_response(
                     response, message)
 
                 if callback:
@@ -582,13 +573,29 @@ class FlexfillsApi:
         # if message.get('command') == 'SUBSCRIBE':
         #     return True, json_resp
 
-        if json_resp['event'] == 'ERROR':
+        if json_resp.get('event') == 'ERROR':
             return True, json_resp
 
-        if json_resp['event'] == 'ACK':
+        if json_resp.get('event') == 'ACK':
             return False, json_resp
 
         return True, json_resp
+
+    def _validate_subscribe_response(self, response, message):
+        json_resp = json.loads(response)
+
+        if not message or 'command' not in message:
+            return True, json_resp
+
+        event = json_resp.get('event')
+
+        if event == None or event == 'ERROR':
+            return True, json_resp
+
+        if json_resp.get('event') == 'ACK':
+            return False, json_resp
+
+        return False, json_resp
 
     def _validate_payload(self, payload, required_keys, optional_keys, data_type=''):
         valid_data = {}

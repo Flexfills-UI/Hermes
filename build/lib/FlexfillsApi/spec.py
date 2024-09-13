@@ -14,13 +14,13 @@ date_from = "2022-12-01T00:00:00"
 date_to = "2022-12-14T22:30:00"
 
 order_data = {
-    "globalInstrumentCd": "BTC/USD",
-    "clientOrderId": "0989876565",
-    "direction": "SELL",
-    "orderType": "LIMIT",
+    "globalInstrumentCd": "BTC/USDT",
+    "exchange": "HUOBI",
+    "orderType": "POST_ONLY",
+    "direction": "BUY",
     "timeInForce": "GTC",
-    # "price": "0.215",
-    "amount": "1.0"
+    "amount": "0.001",
+    "price": "56547.42636363636"
 }
 
 direct_order_data = {
@@ -39,13 +39,12 @@ direct_order_data = {
 cancel_order_data = {
     "class": "Order",
     "globalInstrumentCd": "BTC/USDT",
-    "clientOrderId": "11726108565459",
+    "clientOrderId": "11726203210011",
     "direction": "BUY",
     "orderType": "LIMIT",
-    "timeInForce": "GTC",
-    "price": "55000",
-    "amount": "0.002",
-    "exchange": "FLEXFILLS",
+    "price": "56547.42636363636",
+    "amount": "0.001",
+    "exchange": "HUOBI",
     "timeInForce": None
 }
 
@@ -63,9 +62,9 @@ def main():
     # resp = flexfills.subscribe_order_books(["BTC/USDT"])
     # resp = flexfills.get_trade_positions()
 
-    # resp = flexfills.create_order(direct_order_data)
-    # resp = flexfills.get_open_orders_list(['BTC/USDT'])
+    # resp = flexfills.create_order(order_data)
     resp = flexfills.cancel_order(cancel_order_data)
+    # resp = flexfills.get_open_orders_list(['BTC/USDT'])
     # resp = flexfills.get_balance(currencies)
 
     # resp = flexfills.get_private_trades(instruments, get_order_books_stream)
