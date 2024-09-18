@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import websockets
+from websockets.exceptions import InvalidStatusCode, ConnectionClosedError
 import http.client
 
 # Define Auth Urls
@@ -34,8 +35,21 @@ ORDER_TYPES = ['MARKET', 'LIMIT', 'POST_ONLY']
 TIME_IN_FORCES = ['GTC', 'GTD', 'GTT', 'FOK', 'IOC']
 
 
+class FlexfillsConnectException(Exception):
+    "Raised when unauthorized access to Flexfills API"
+    pass
+
+
+class FlexfillsParamsException(Exception):
+    "Raised when parameters are not valid"
+    pass
+
+
 def initialize(username, password, is_test=False):
     auth_token = get_auth_token(username, password, is_test)
+
+    if not auth_token:
+        raise Exception('Flexfills API authentication failed!')
 
     flexfills = FlexfillsApi(auth_token, is_test)
 
@@ -310,12 +324,12 @@ class FlexfillsApi:
 
         return resp
 
-    def create_order(self, order_data):
+    def create_order(self, order_datas):
         """ Send new order
 
         Parameters:
         ----------
-        order_data: The object of order, including globalInstrumentCd, clientOrderId, direction
+        order_data: List of order objects, including globalInstrumentCd, clientOrderId, direction
         orderType, timeInForce, price, amount
 
         Returns:
@@ -324,20 +338,27 @@ class FlexfillsApi:
 
         """
 
+        if not order_datas:
+            return None
+
         required_keys = ['globalInstrumentCd', 'exchange',
                          'direction', 'orderType', 'amount']
 
         optional_keys = ['exchangeName', 'orderSubType',
                          'price', 'clientOrderId', 'timeInForce', 'tradeSide']
 
-        valid_data = self._validate_payload(
-            order_data, required_keys, optional_keys, 'order_data')
+        valid_datas = []
+        for order_data in order_datas:
+            valid_data = self._validate_payload(
+                order_data, required_keys, optional_keys, 'order_data')
 
-        if valid_data['orderType'] == 'LIMIT' and 'price' not in valid_data:
-            raise Exception("Price should be included in order_data.")
+            valid_data['class'] = 'Order'
 
-        # if str(order_data.get('requestType', '')).upper() == 'DIRECT' and 'exchangeName' not in order_data:
-        #     raise Exception("Direct orders need to have exchangeName.")
+            if valid_data['orderType'] == 'LIMIT' and 'price' not in valid_data:
+                raise FlexfillsParamsException(
+                    "Price should be included in order_data.")
+
+            valid_datas.append(valid_data)
 
         # Before sending the new order, request user must first be subscribed to desired pair, otherwise order will be rejected.
 
@@ -348,18 +369,16 @@ class FlexfillsApi:
             "channelArgs": [
                 {
                     "name": "instrument",
-                    "value": f"[{str(valid_data['globalInstrumentCd'])}]"
+                    "value": f"[{str(valid_datas[0]['globalInstrumentCd'])}]"
                 }
             ]
         }
-
-        valid_data['class'] = 'Order'
 
         message = {
             "command": "CREATE",
             "signature": self._auth_token,
             "channel": CH_PRV_TRADE_PRIVATE,
-            "data": [valid_data]
+            "data": valid_datas
         }
 
         resp = asyncio.get_event_loop().run_until_complete(
@@ -367,14 +386,19 @@ class FlexfillsApi:
 
         return resp
 
-    def cancel_order(self, order_data):
+    def cancel_order(self, order_datas):
+        if not order_datas:
+            return None
+
         required_keys = ['globalInstrumentCd', 'clientOrderId', 'direction',
                          'orderType', 'timeInForce', 'price', 'amount', 'exchange']
 
-        valid_data = self._validate_payload(
-            order_data, required_keys, [], 'order_data')
-
-        valid_data['class'] = "Order"
+        valid_datas = []
+        for order_data in order_datas:
+            valid_data = self._validate_payload(
+                order_data, required_keys, [], 'order_data')
+            valid_data['class'] = "Order"
+            valid_datas.append(valid_data)
 
         subscribe_message = {
             "command": "SUBSCRIBE",
@@ -383,7 +407,7 @@ class FlexfillsApi:
             "channelArgs": [
                 {
                     "name": "instrument",
-                    "value": f"[{str(order_data['globalInstrumentCd'])}]"
+                    "value": f"[{str(valid_datas[0]['globalInstrumentCd'])}]"
                 }
             ]
         }
@@ -392,7 +416,7 @@ class FlexfillsApi:
             "command": "CANCEL",
             "signature": self._auth_token,
             "channel": CH_PRV_TRADE_PRIVATE,
-            "data": [valid_data]
+            "data": valid_datas
         }
 
         resp = asyncio.get_event_loop().run_until_complete(
@@ -504,65 +528,83 @@ class FlexfillsApi:
     # Protected Methods
 
     async def _subscribe_and_send_message(self, subscriber, message, callback=None, is_onetime=False):
-        async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
-            await websocket.send(json.dumps(subscriber))
+        try:
+            async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
+                await websocket.send(json.dumps(subscriber))
 
-            subscribe_response = await websocket.recv()
-            is_valid_subscribe, validated_subscribe_response = self._validate_response(
-                subscribe_response, subscriber)
+                subscribe_response = await websocket.recv()
+                is_valid_subscribe, validated_subscribe_response = self._validate_response(
+                    subscribe_response, subscriber)
 
-            if validated_subscribe_response['event'] == 'ERROR':
-                return validated_subscribe_response
+                if validated_subscribe_response['event'] == 'ERROR':
+                    return validated_subscribe_response
 
-            validated_resp = ''
+                datas = message.get('data')
+                validated_resps = []
+                _message = message
 
-            await websocket.send(json.dumps(message))
+                for data in datas:
+                    validated_resp = ''
+                    _message['data'] = [data]
 
-            while True:
-                response = await websocket.recv()
+                    await websocket.send(json.dumps(_message))
 
-                is_valid, validated_resp = self._validate_subscribe_response(
-                    response, message)
+                    while True:
+                        response = await websocket.recv()
 
-                if callback:
-                    callback(validated_resp)
-                else:
-                    if is_onetime is True:
-                        break
+                        is_valid, validated_resp = self._validate_subscribe_response(
+                            response, message)
 
-                    if is_valid is True:
-                        break
+                        if callback:
+                            callback(validated_resp)
+                        else:
+                            if is_onetime is True:
+                                break
 
-            return validated_resp
+                            if is_valid is True:
+                                break
+
+                    validated_resps.append(validated_resp)
+
+                return validated_resps
+
+        except (InvalidStatusCode, ConnectionClosedError) as e:
+            print(f"Error while connecting FlexfillsApi: {str(e)}")
+            raise FlexfillsConnectException
 
     async def _send_message(self, message, callback=None, is_onetime=False):
-        async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
-            await websocket.send(json.dumps(message))
+        try:
+            async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
+                await websocket.send(json.dumps(message))
 
-            count = 0
-            validated_resp = ''
+                count = 0
+                validated_resp = ''
 
-            while True:
-                response = await websocket.recv()
+                while True:
+                    response = await websocket.recv()
 
-                is_valid, validated_resp = self._validate_response(
-                    response, message)
+                    is_valid, validated_resp = self._validate_response(
+                        response, message)
 
-                if callback:
-                    callback(validated_resp)
-                else:
-                    if is_onetime is True:
-                        break
+                    if callback:
+                        callback(validated_resp)
+                    else:
+                        if is_onetime is True:
+                            break
 
-                    if is_valid is True:
-                        break
+                        if is_valid is True:
+                            break
 
-                    if count >= 10:
-                        break
+                        if count >= 10:
+                            break
 
-                    count += 1
+                        count += 1
 
-            return validated_resp
+                return validated_resp
+
+        except (InvalidStatusCode, ConnectionClosedError) as e:
+            print(f"Error while connecting FlexfillsApi: {str(e)}")
+            raise FlexfillsConnectException
 
     def _validate_response(self, response, message):
         json_resp = json.loads(response)
@@ -592,7 +634,7 @@ class FlexfillsApi:
         if event == None or event == 'ERROR':
             return True, json_resp
 
-        if json_resp.get('event') == 'ACK':
+        if event == 'ACK':
             return False, json_resp
 
         return False, json_resp
@@ -605,8 +647,8 @@ class FlexfillsApi:
                 if k in payload:
                     valid_data[k] = str(payload.get(k))
                 else:
-                    raise Exception(f"{k} field should be in the {
-                                    data_type if data_type else 'payload data'}")
+                    raise FlexfillsParamsException(f"{k} field should be in the {
+                        data_type if data_type else 'payload data'}")
 
         if optional_keys:
             for k in optional_keys:
@@ -617,14 +659,14 @@ class FlexfillsApi:
             if str(payload['direction']).upper() in ORDER_DIRECTIONS:
                 valid_data['direction'] = str(payload['direction']).upper()
             else:
-                raise Exception(
+                raise FlexfillsParamsException(
                     f"the direction field is not valid in {data_type if data_type else 'payload data'}")
 
         if 'orderType' in payload:
             if str(payload['orderType']).upper() in ORDER_TYPES:
                 valid_data['orderType'] = str(payload['orderType']).upper()
             else:
-                raise Exception(
+                raise FlexfillsParamsException(
                     f"the orderType field is not valid in {data_type if data_type else 'payload data'}")
 
         if 'timeInForce' in payload:
@@ -633,7 +675,7 @@ class FlexfillsApi:
             elif str(payload['timeInForce']).upper() in TIME_IN_FORCES:
                 valid_data['timeInForce'] = str(payload['timeInForce']).upper()
             else:
-                raise Exception(
+                raise FlexfillsParamsException(
                     f"the timeInForce field is not valid in {data_type if data_type else 'payload data'}")
 
         return valid_data

@@ -3,6 +3,7 @@ README.md
 pyproject.toml
 setup.py
 FlexfillsApi/__init__.py
+FlexfillsApi/_spec.py
 FlexfillsApi/flexfillsapi.py
 FlexfillsApi/spec.py
 FlexfillsApi.egg-info/PKG-INFO

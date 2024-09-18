@@ -3,3 +3,4 @@ __pycache__
 .vscode
 
 FlexfillsApi/spec.py
+FlexfillsApi/_spec.py

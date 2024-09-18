@@ -88,9 +88,9 @@ assets_list = flexfills_api.get_instrument_list()
             <td>Get current list of open orders. One time request/response.</td>
         </tr>
         <tr>
-            <td><code class="highlighter-rouge">create_order(order_data)</code></td>
+            <td><code class="highlighter-rouge">create_order(order_datas)</code></td>
             <td>
-                <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId, orderType, timeInForce, price, amount, exchangeName, orderSubType, tradeSide
+                <p><strong>order_datas:</strong> The list of order data dict. The order data includes globalInstrumentCd, clientOrderId, orderType, timeInForce, price, amount, exchangeName, orderSubType, tradeSide
                 <ul>
                     <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
                     <li>clientOrderId: Id of the order. string</li>
@@ -115,13 +115,18 @@ assets_list = flexfills_api.get_instrument_list()
             <td>Get current list of open orders. One time request/response.</td>
         </tr>
         <tr>
-            <td><code class="highlighter-rouge">cancel_order(order_data)</code></td>
+            <td><code class="highlighter-rouge">cancel_order(order_datas)</code></td>
             <td>
-                <p><strong>order_data:</strong> The dict of order data, including globalInstrumentCd, clientOrderId or exchangeOrderId
+                <p><strong>order_datas:</strong> The list of order data dict. The order data includes globalInstrumentCd, clientOrderId, direction, orderType, timeInForce, price, amount, exchange
                 <ul>
-                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string</li>
-                    <li>clientOrderId: Id of the order. string</li>
-                    <li>exchangeOrderId: exchangeOrderId. string</li>
+                    <li>globalInstrumentCd - pair of currencies (BTC/USD, ...). string, required</li>
+                    <li>clientOrderId: Id of the order. string, required</li>
+                    <li>orderType: <strong>market</strong> - Market order, <strong>limit</strong> - Limit order. string, required</li>
+                    <li>direction: Side of the order Enum "BUY", "SELL" and "POST_ONLY". string, required</li>
+                    <li>timeInForce: string, required</li>
+                    <li>price: Price only required for limit orders, string, required</li>
+                    <li>amount: Quantity of the order, string, required</li>
+                    <li>exchange: Name of exchange to send order to. string, required</li>
                 </ul>
                 </p>
             </td>
