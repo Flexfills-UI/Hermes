@@ -8,4 +8,4 @@ Library to use Flex Fills WebSocket communication with FlexFills trading service
 __author__ = "Djordje Nikolic"
 __credits__ = "FlexFills"
 
-from .flexfillsapi import initialize
+from .flexfillsapi import initialize, FlexfillsConnectException, FlexfillsParamsException
