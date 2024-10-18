@@ -4,6 +4,7 @@ import asyncio
 import websockets
 from websockets.exceptions import InvalidStatusCode, ConnectionClosedError
 import http.client
+import ssl
 
 # Define Auth Urls
 
@@ -58,7 +59,9 @@ def initialize(username, password, is_test=False):
 
 def get_auth_token(username, password, is_test=False):
     conn_url = BASE_DOMAIN_TEST if is_test else BASE_DOMAIN_PROD
-    conn = http.client.HTTPSConnection(conn_url)
+    # context = ssl.create_default_context()
+    context = ssl._create_unverified_context()
+    conn = http.client.HTTPSConnection(conn_url, context=context)
 
     payload = f"username={username}&password={password}"
 
