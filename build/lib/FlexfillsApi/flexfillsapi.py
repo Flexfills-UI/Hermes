@@ -125,6 +125,11 @@ class FlexfillsApi:
         self._auth_token = auth_token
         self._auth_header = {"Authorization": self._auth_token}
 
+        # SSL context for websockets connection
+        self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        self.ssl_context.check_hostname = False
+        self.ssl_context.verify_mode = ssl.CERT_NONE
+
     def get_asset_list(self):
         """ Provides a list of supported assets and their trading specifications.
 
@@ -532,7 +537,7 @@ class FlexfillsApi:
 
     async def _subscribe_and_send_message(self, subscriber, message, callback=None, is_onetime=False):
         try:
-            async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
+            async with websockets.connect(self._socket_url, extra_headers=self._auth_header, ssl=self.ssl_context) as websocket:
                 await websocket.send(json.dumps(subscriber))
 
                 subscribe_response = await websocket.recv()
@@ -577,7 +582,7 @@ class FlexfillsApi:
 
     async def _send_message(self, message, callback=None, is_onetime=False):
         try:
-            async with websockets.connect(self._socket_url, extra_headers=self._auth_header) as websocket:
+            async with websockets.connect(self._socket_url, extra_headers=self._auth_header, ssl=self.ssl_context) as websocket:
                 await websocket.send(json.dumps(message))
 
                 count = 0

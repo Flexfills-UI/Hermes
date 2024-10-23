@@ -66,7 +66,7 @@ def handleFlexfillsAPIException(max_retries=max_tries, delay=retry_delay):
                     # Reset connection on FlexfillsConnectException and relogin
 
                     time.sleep(delay)
-                    login_flexfills()
+                    RenkoTraderApp.login_flexfills()
 
                 except Exception as e:
                     attempts += 1
@@ -84,7 +84,7 @@ def handleFlexfillsAPIException(max_retries=max_tries, delay=retry_delay):
                 f"Failed after {max_retries} attempts while executing {func.__name__}. Dropping connection and starting over.")
 
             # Drop the connection and reinitialize
-            login_flexfills()
+            RenkoTraderApp.login_flexfills()
 
             # Start the process again
             return wrapper(*args, **kwargs)
@@ -94,21 +94,10 @@ def handleFlexfillsAPIException(max_retries=max_tries, delay=retry_delay):
     return decorator_retry
 
 
-# --------------------------------
-# Login to Flexfills API
-# --------------------------------
-
-def login_flexfills(username, password, is_test=False):
-    # Initialize FlexfillsApi
-    logging.info("Initializing FlexfillsApi with provided credentials...")
-    flexfills_api = initialize(
-        username, password, is_test=is_test)
-    logging.info("FlexfillsApi initialized successfully!")
-
-    return flexfills_api
-
-
 class RenkoTraderApp:
+    flexfills_username = ''
+    flexfills_password = ''
+
     def __init__(self, root):
         self.root = root
         self.root.title("Live Renko Trading Strategy")
@@ -151,48 +140,50 @@ class RenkoTraderApp:
         frame_l.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
 
         # Input fields
-        tk.Label(frame_l, text="API Key").grid(row=0, column=0)
+        tk.Label(frame_l, text="API Key").grid(row=0, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.api_key).grid(row=0, column=1)
 
-        tk.Label(frame_l, text="API Secret").grid(row=1, column=0)
+        tk.Label(frame_l, text="API Secret").grid(row=1, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.api_secret).grid(row=1, column=1)
 
-        tk.Label(frame_l, text="Symbol").grid(row=2, column=0)
+        tk.Label(frame_l, text="Symbol").grid(row=2, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.symbol).grid(row=2, column=1)
 
-        tk.Label(frame_l, text="Amount").grid(row=3, column=0)
+        tk.Label(frame_l, text="Amount").grid(row=3, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.amount).grid(row=3, column=1)
 
-        tk.Label(frame_l, text="File Path").grid(row=4, column=0)
+        tk.Label(frame_l, text="File Path").grid(row=4, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.file_path).grid(row=4, column=1)
 
-        tk.Label(frame_l, text="Timeframe").grid(row=5, column=0)
+        tk.Label(frame_l, text="Timeframe").grid(row=5, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.timeframe).grid(row=5, column=1)
 
-        tk.Label(frame_l, text="EMA Span").grid(row=6, column=0)
+        tk.Label(frame_l, text="EMA Span").grid(row=6, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.ema_span).grid(row=6, column=1)
 
-        tk.Label(frame_l, text="SMA Window").grid(row=7, column=0)
+        tk.Label(frame_l, text="SMA Window").grid(row=7, column=0, padx=10)
         tk.Entry(frame_l, textvariable=self.sma_window).grid(row=7, column=1)
 
         frame_r = self._create_widget(self.root, tk.Frame)
         frame_r.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
 
-        tk.Label(frame_r, text="Flexfills Username").grid(row=0, column=0)
+        tk.Label(frame_r, text="Flexfills Username").grid(
+            row=0, column=0, padx=10)
         tk.Entry(frame_r, textvariable=self.flexfills_user).grid(
             row=0, column=1)
 
-        tk.Label(frame_r, text="Flexfills Password").grid(row=1, column=0)
+        tk.Label(frame_r, text="Flexfills Password").grid(
+            row=1, column=0, padx=10)
         tk.Entry(frame_r, textvariable=self.flexfills_pwd).grid(
             row=1, column=1)
 
-        tk.Label(frame_r, text="Exchange Name").grid(row=2, column=0)
+        tk.Label(frame_r, text="Exchange Name").grid(row=2, column=0, padx=10)
         tk.OptionMenu(frame_r, self.flexfills_exchange, *flexfills_exchanges).grid(
-            row=2, column=1)
+            row=2, column=1, sticky='NW')
 
-        tk.Label(frame_r, text="Order Type").grid(row=3, column=0)
+        tk.Label(frame_r, text="Order Type").grid(row=3, column=0, padx=10)
         tk.OptionMenu(frame_r, self.flexfills_order_type, *flexfills_order_types).grid(
-            row=3, column=1)
+            row=3, column=1, sticky='NW')
 
         # Start/Stop buttons
         self.start_button = tk.Button(
@@ -255,13 +246,26 @@ class RenkoTraderApp:
         console.setLevel(logging.DEBUG)
         logging.getLogger().addHandler(console)
 
+    @classmethod
+    def login_flexfills(cls):
+        # Initialize FlexfillsApi
+        logging.info("Initializing FlexfillsApi with provided credentials...")
+        flexfills_api = initialize(
+            cls.flexfills_username, cls.flexfills_password, is_test=True)
+        logging.info("FlexfillsApi initialized successfully!")
+
+        return flexfills_api
+
+    @classmethod
+    def set_flexfills_credentials(cls, user, pwd):
+        cls.flexfills_username = user
+        cls.flexfills_password = pwd
+
     def init_flexfills(self):
         # Initialize FlexfillsApi
-        flexfills_user = self.flexfills_user.get()
-        flexfills_pwd = self.flexfills_pwd.get()
-
-        self.flexfills_api = login_flexfills(
-            flexfills_user, flexfills_pwd, is_test=True)
+        RenkoTraderApp.set_flexfills_credentials(
+            self.flexfills_user.get(), self.flexfills_pwd.get())
+        self.flexfills_api = RenkoTraderApp.login_flexfills()
 
     def start(self):
         if not self.validate_parameters():
@@ -605,8 +609,14 @@ class RenkoTraderApp:
             time.sleep(300)
 
     def run_strategy_v2(self):
+        self.exchange = ccxt.deribit({
+            'apiKey': self.api_key.get(),
+            'secret': self.api_secret.get(),
+        })
+
         # Initialize Logging and FlexfillsApi
         self.init_progress_logging()
+
         try:
             self.init_flexfills()
         except Exception as e:
@@ -616,11 +626,6 @@ class RenkoTraderApp:
                 "Error", "Flexfills login failed. Please try again.")
 
             return
-
-        self.exchange = ccxt.deribit({
-            'apiKey': self.api_key.get(),
-            'secret': self.api_secret.get(),
-        })
 
         self.initialize_log_files()
 
@@ -760,17 +765,8 @@ class RenkoTraderApp:
 
                 last_processed_timestamp = renko_df['timestamp'].iloc[i]
 
-            orders = [{
-                "globalInstrumentCd": global_instrument_cd,
-                "exchange": "FLEXFILLS",
-                "orderType": "LIMIT",
-                "direction": "BUY",
-                "timeInForce": "GTC",
-                "amount": "0.001",
-                "price": "56547.42636363636"
-            }]
-
             # Placing orders on Flexfills
+
             if orders:
                 self.place_flexfills_orders(orders)
 
@@ -797,7 +793,8 @@ class RenkoTraderApp:
             if not self.is_running:
                 break
 
-            time.sleep(300)
+            # time.sleep(300)
+            time.sleep(10)
 
             # Check active orders
             active_orders = self.get_flexfills_active_orders(
