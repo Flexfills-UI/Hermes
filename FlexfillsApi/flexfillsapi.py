@@ -5,6 +5,7 @@ import websockets
 from websockets.exceptions import InvalidStatusCode, ConnectionClosedError
 import http.client
 import ssl
+import time
 
 # Define Auth Urls
 
@@ -34,6 +35,16 @@ CH_PRV_TRADE_POSITIONS = 'TRADE_POSITIONS'
 ORDER_DIRECTIONS = ['SELL', 'BUY']
 ORDER_TYPES = ['MARKET', 'LIMIT', 'POST_ONLY']
 TIME_IN_FORCES = ['GTC', 'GTD', 'GTT', 'FOK', 'IOC']
+PERIODS = ['ONE_MIN',
+           'FIVE_MIN',
+           'FIFTEEN_MIN',
+           'THIRTY_MIN',
+           'FORTY_FIVE_MIN',
+           'ONE_HOUR',
+           'TWO_HOUR',
+           'FOUR_HOURS',
+           'TWELVE_HOURS',
+           'ONE_DAY']
 
 
 class FlexfillsConnectException(Exception):
@@ -532,6 +543,42 @@ class FlexfillsApi:
         resp = asyncio.get_event_loop().run_until_complete(self._send_message(message))
 
         return resp
+
+    def trades_data_provider(self, exchange, instrument, period, candle_count):
+        print("Start tardes data provider function...")
+
+        if period not in PERIODS:
+            raise Exception('the period param is not correct')
+
+        conn_url = BASE_DOMAIN_TEST if self._is_test else BASE_DOMAIN_PROD
+        context = ssl._create_unverified_context()
+        conn = http.client.HTTPSConnection(conn_url, context=context)
+
+        timestamp = int(time.time())
+        _exchange = exchange if exchange else 'FLEXFILLS'
+        _instrument = instrument.replace('/', '%2F')
+
+        provider_url = f"/gateway/hermes-data-provider/trades/agg/{_exchange}?instrument={
+            _instrument}&period={period}&end={timestamp}&count={candle_count}"
+
+        headers = {
+            'Accept': '*/*',
+            'Authorization': self._auth_token,
+        }
+
+        conn.request("GET", provider_url, headers=headers)
+        res = conn.getresponse()
+        res_data = res.read()
+
+        if res.status != 200 or not res_data:
+            raise Exception(
+                f"Could not connect to Data provider: {res.reason}")
+
+        conn.close()
+
+        data = json.loads(res_data.decode("utf-8"))
+
+        return data
 
     # Protected Methods
 

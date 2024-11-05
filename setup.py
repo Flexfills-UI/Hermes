@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='FlexfillsApi',
-    version='0.1.8',
+    version='0.1.9',
     packages=find_packages(),
     install_requires=required,
     author='Djordje Nikolic',

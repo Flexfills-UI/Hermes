@@ -171,6 +171,16 @@ assets_list = flexfills_api.get_instrument_list()
             <td></td>
             <td></td>
         </tr>
+        <tr>
+            <td><code class="highlighter-rouge">trades_data_provider(exchange, instrument, period, candle_count)</code></td>
+            <td>
+                <p><strong>exchange:</strong> Name of exchange. string, required</p>
+                <p><strong>instrument:</strong> pair of currencies (BTC/USD, ...). string, required</p>
+                <p><strong>period:</strong> period can be <strong>ONE_MIN</strong>, <strong>FIVE_MIN</strong>, <strong>FIFTEEN_MIN</strong>, <strong>THIRTY_MIN</strong>, <strong>FORTY_FIVE_MIN</strong>, <strong>ONE_HOUR</strong>, <strong>TWO_HOUR</strong>, <strong>FOUR_HOURS</strong>, <strong>TWELVE_HOURS</strong>, <strong>ONE_DAY</strong></p>
+                <p><strong>candle_count:</strong> The number of candles to get. integer, required</p>
+            </td>
+            <td></td>
+        </tr>
     </tbody>
 </table>
 

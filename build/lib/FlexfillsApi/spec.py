@@ -822,7 +822,17 @@ class RenkoTraderApp:
         print(_msg)
 
 
+def test_trades_data_provider():
+    flexfills = initialize('100000_renko1', 'abc123', is_test=True)
+    trade_data = flexfills.trades_data_provider(
+        'FLEXFILLS', 'BTC/USDT', 'ONE_MIN', 500)
+
+    print(trade_data)
+
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = RenkoTraderApp(root)
-    root.mainloop()
+    # root = tk.Tk()
+    # app = RenkoTraderApp(root)
+    # root.mainloop()
+
+    test_trades_data_provider()
