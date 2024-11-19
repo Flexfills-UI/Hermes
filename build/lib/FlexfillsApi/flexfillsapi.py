@@ -580,6 +580,63 @@ class FlexfillsApi:
 
         return data
 
+    def get_exchange_names(self):
+        print("Start to get exchange names...")
+
+        conn_url = BASE_DOMAIN_TEST if self._is_test else BASE_DOMAIN_PROD
+        context = ssl._create_unverified_context()
+        conn = http.client.HTTPSConnection(conn_url, context=context)
+
+        provider_url = "/gateway/hermes-exchange-api-gateway/exchanges"
+
+        headers = {
+            'Accept': '*/*',
+            'Authorization': self._auth_token,
+        }
+
+        conn.request("GET", provider_url, headers=headers)
+        res = conn.getresponse()
+        res_data = res.read()
+
+        if res.status != 200 or not res_data:
+            raise Exception(
+                f"Could not connect to Exchange API: {res.reason}")
+
+        conn.close()
+
+        data = json.loads(res_data.decode("utf-8"))
+
+        return data
+
+    def get_instruments_by_type(self, exchange, instrument_type):
+        print("Start to get instruments by type...")
+
+        conn_url = BASE_DOMAIN_TEST if self._is_test else BASE_DOMAIN_PROD
+        context = ssl._create_unverified_context()
+        conn = http.client.HTTPSConnection(conn_url, context=context)
+
+        provider_url = f"/gateway/hermes-exchange-api-gateway/exchanges/{
+            exchange}/instruments/{instrument_type}"
+
+        headers = {
+            'Accept': '*/*',
+            'Authorization': self._auth_token,
+        }
+
+        conn.request("GET", provider_url, headers=headers)
+        res = conn.getresponse()
+        res_data = res.read()
+
+        if res.status != 200 or not res_data:
+            raise Exception(
+                f"Could not connect to Exchange API: {res.reason}")
+
+        conn.close()
+
+        data = json.loads(res_data.decode("utf-8"))
+
+        return data
+
     # Protected Methods
 
     async def _subscribe_and_send_message(self, subscriber, message, callback=None, is_onetime=False):

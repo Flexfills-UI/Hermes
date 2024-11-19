@@ -830,9 +830,23 @@ def test_trades_data_provider():
     print(trade_data)
 
 
+def test_get_exchange_names():
+    flexfills = initialize('100000_renko1', 'abc123', is_test=True)
+    exchange_names = flexfills.get_exchange_names()
+
+    print(exchange_names)
+
+
+def test_get_instruments_by_type():
+    flexfills = initialize('100000_renko1', 'abc123', is_test=True)
+    instrument_details = flexfills.get_instruments_by_type('BITFINEX', 'SPOT')
+
+    print(instrument_details)
+
+
 if __name__ == "__main__":
     # root = tk.Tk()
     # app = RenkoTraderApp(root)
     # root.mainloop()
 
-    test_trades_data_provider()
+    test_get_exchange_names()
