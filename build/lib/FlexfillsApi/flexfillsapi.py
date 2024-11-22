@@ -544,7 +544,7 @@ class FlexfillsApi:
 
         return resp
 
-    def trades_data_provider(self, exchange, instrument, period, candle_count):
+    def trades_data_provider(self, exchange, instrument, period, timestamp, candle_count):
         print("Start tardes data provider function...")
 
         if period not in PERIODS:
@@ -554,7 +554,6 @@ class FlexfillsApi:
         context = ssl._create_unverified_context()
         conn = http.client.HTTPSConnection(conn_url, context=context)
 
-        timestamp = int(time.time())
         _exchange = exchange if exchange else 'FLEXFILLS'
         _instrument = instrument.replace('/', '%2F')
 
