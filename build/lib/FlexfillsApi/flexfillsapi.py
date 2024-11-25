@@ -12,11 +12,11 @@ import time
 AUTH_STEP_1_TEST = 'https://uat.flexfills.com/auth/login'
 AUTH_STEP_2_TEST = 'https://uat.flexfills.com/auth/auth/jwt/clients/{}/token'
 
-AUTH_STEP_1_PROD = 'https://flexfills.com/auth/login'
-AUTH_STEP_2_PROD = 'https://flexfills.com/auth/auth/jwt/clients/{}/token'
+AUTH_STEP_1_PROD = 'https://terminal.flexfills.com/auth/login'
+AUTH_STEP_2_PROD = 'https://terminal.flexfills.com/auth/auth/jwt/clients/{}/token'
 
 BASE_DOMAIN_TEST = "uat.flexfills.com"
-BASE_DOMAIN_PROD = "flexfills.com"
+BASE_DOMAIN_PROD = "terminal.flexfills.com"
 
 # Define public and private channels
 
@@ -128,7 +128,7 @@ class FlexfillsApi:
 
     WS_URL_TEST = 'wss://uat.flexfills.com/exchange/ws'
 
-    WS_URL_PROD = 'wss://flexfills.com/exchange/ws'
+    WS_URL_PROD = 'wss://terminal.flexfills.com/exchange/ws'
 
     def __init__(self, auth_token, is_test=False):
         self._is_test = is_test
