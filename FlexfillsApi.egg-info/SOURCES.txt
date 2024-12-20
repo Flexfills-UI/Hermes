@@ -4,6 +4,7 @@ pyproject.toml
 setup.py
 FlexfillsApi/__init__.py
 FlexfillsApi/flexfillsapi.py
+FlexfillsApi/spec.py
 FlexfillsApi.egg-info/PKG-INFO
 FlexfillsApi.egg-info/SOURCES.txt
 FlexfillsApi.egg-info/dependency_links.txt

@@ -91,8 +91,9 @@ def get_auth_token(username, password, is_test=False):
     jsession_id = None
     if cookies:
         for cookie in cookies.split(';'):
-            if 'JSESSIONID' in cookie:
+            if 'SESSION' in cookie:
                 jsession_id = cookie.strip()
+                break
 
     if not jsession_id:
         raise Exception('Could not authenticate.')
