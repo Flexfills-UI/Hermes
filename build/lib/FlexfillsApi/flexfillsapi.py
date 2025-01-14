@@ -587,7 +587,7 @@ class FlexfillsApi:
         context = ssl._create_unverified_context()
         conn = http.client.HTTPSConnection(conn_url, context=context)
 
-        provider_url = "/gateway/hermes-exchange-api-gateway/exchanges"
+        provider_url = "/gateway/hermes-eag-private/exchanges"
 
         headers = {
             'Accept': '*/*',
