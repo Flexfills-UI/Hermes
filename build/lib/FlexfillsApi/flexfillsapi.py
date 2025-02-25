@@ -6,6 +6,7 @@ from websockets.exceptions import InvalidStatusCode, ConnectionClosedError
 import http.client
 import ssl
 import time
+import functools
 
 # Define Auth Urls
 
@@ -46,6 +47,9 @@ PERIODS = ['ONE_MIN',
            'TWELVE_HOURS',
            'ONE_DAY']
 
+max_tries = 5
+retry_delay = 5  # Seconds between reconnection attempts
+
 
 class FlexfillsConnectException(Exception):
     "Raised when unauthorized access to Flexfills API"
@@ -57,13 +61,50 @@ class FlexfillsParamsException(Exception):
     pass
 
 
+def handleAPIException(max_retries=max_tries, delay=retry_delay):
+    def decorator_retry(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+
+            while attempts < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except FlexfillsConnectException as e:
+                    # Handling API connection error
+                    attempts += 1
+                    print(
+                        f"Flexfills API connection was closed, retrying: {attempts}")
+
+                    # Reset connection on FlexfillsConnectException and relogin
+
+                    time.sleep(delay)
+                    FlexfillsApi.login_flexfills()
+
+                except Exception as e:
+                    attempts += 1
+                    print(f"Failed to execute {
+                        func.__name__}, retrying: {attempts}")
+
+                    time.sleep(delay)
+
+            # Reset connection after failure and start over instead of crashing
+            print(
+                f"Failed after {max_retries} attempts while executing {func.__name__}. Dropping connection and starting over.")
+
+            # Drop the connection and reinitialize
+            FlexfillsApi.login_flexfills()
+
+            # Start the process again
+            return wrapper(*args, **kwargs)
+
+        return wrapper
+
+    return decorator_retry
+
+
 def initialize(username, password, is_test=False):
-    auth_token = get_auth_token(username, password, is_test)
-
-    if not auth_token:
-        raise Exception('Flexfills API authentication failed!')
-
-    flexfills = FlexfillsApi(auth_token, is_test)
+    flexfills = FlexfillsApi(username, password, is_test)
 
     return flexfills
 
@@ -123,6 +164,120 @@ def get_auth_token(username, password, is_test=False):
 
 
 class FlexfillsApi:
+    """
+    FlexFills API Wrapper Class
+    """
+
+    flexfills_api = None
+    flexfills_username = ''
+    flexfills_password = ''
+    is_test = True
+
+    def __init__(self, username, password, is_test):
+        FlexfillsApi.set_flexfills_credentials(username, password, is_test)
+        self.init_flexfills()
+
+        self.auth_token = None
+
+    def init_flexfills(self):
+        # Initialize FlexfillsApi
+        FlexfillsApi.login_flexfills()
+
+    @classmethod
+    def set_flexfills_credentials(cls, user, pwd, is_test):
+        cls.flexfills_username = user
+        cls.flexfills_password = pwd
+        cls.is_test = is_test
+
+    @classmethod
+    def login_flexfills(cls):
+        # Initialize FlexfillsApi
+        print("Initializing FlexfillsApi with provided credentials...")
+        auth_token = get_auth_token(
+            cls.flexfills_username, cls.flexfills_password, cls.is_test)
+
+        if not auth_token:
+            raise Exception('Flexfills API authentication failed!')
+
+        flexfills_api = FlexfillsApiClient(auth_token, cls.is_test)
+
+        cls.flexfills_api = flexfills_api
+        print("FlexfillsApi initialized successfully!")
+
+    # FlexfillsApi Wrapper Functions
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_asset_list(self):
+        self.flexfills_api.get_asset_list()
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_instrument_list(self):
+        self.flexfills_api.get_instrument_list()
+
+    @handleAPIException(max_tries, retry_delay)
+    def subscribe_order_books(self, instruments, callback=None):
+        self.flexfills_api.subscribe_order_books(instruments, callback)
+
+    @handleAPIException(max_tries, retry_delay)
+    def unsubscribe_order_books(self, instruments):
+        self.flexfills_api.unsubscribe_order_books(instruments)
+
+    @handleAPIException(max_tries, retry_delay)
+    def trade_book_public(self, instruments, callback=None):
+        self.flexfills_api.trade_book_public(instruments, callback)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_balance(self, currencies):
+        self.flexfills_api.get_balance(currencies)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_private_trades(self, instruments, callback=None):
+        self.flexfills_api.get_private_trades(instruments, callback)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_open_orders_list(self, instruments=None):
+        self.flexfills_api.get_open_orders_list(instruments)
+
+    @handleAPIException(max_tries, retry_delay)
+    def create_order(self, order_datas):
+        self.flexfills_api.create_order(order_datas)
+
+    @handleAPIException(max_tries, retry_delay)
+    def cancel_order(self, order_datas):
+        self.flexfills_api.cancel_order(order_datas)
+
+    @handleAPIException(max_tries, retry_delay)
+    def modify_order(self, order_data):
+        self.flexfills_api.modify_order(order_data)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_trade_history(self, date_from, date_to, instruments):
+        self.flexfills_api.get_trade_history(date_from, date_to, instruments)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_order_history(self, date_from, date_to, instruments, statues):
+        self.flexfills_api.get_order_history(
+            date_from, date_to, instruments, statues)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_trade_positions(self):
+        self.flexfills_api.get_trade_positions()
+
+    @handleAPIException(max_tries, retry_delay)
+    def trades_data_provider(self, exchange, instrument, period, timestamp, candle_count):
+        self.flexfills_api.trades_data_provider(
+            exchange, instrument, period, timestamp, candle_count)
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_exchange_names(self):
+        self.flexfills_api.get_exchange_names()
+
+    @handleAPIException(max_tries, retry_delay)
+    def get_instruments_by_type(self, exchange, instrument_type):
+        self.flexfills_api.get_instruments_by_type(exchange, instrument_type)
+
+
+class FlexfillsApiClient:
     """
     Flex Fills provides Quotes and Limit Order book for SPOT Crypto.
     """

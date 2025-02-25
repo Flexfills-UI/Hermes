@@ -3,8 +3,12 @@ from flexfillsapi import initialize
 
 
 def login_flexfills():
-    flexfills_api = initialize(
-        'flexfills_username', 'flexfills_password', True)
+    flexfills_username = 'xxx'
+    flexfills_password = 'xxx'
+
+    flexfills_api = initialize(flexfills_username, flexfills_password, True)
+
+    asset_list = flexfills_api.get_asset_list()
 
     print("Login Successful")
 

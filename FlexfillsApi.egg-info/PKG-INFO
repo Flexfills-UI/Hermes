@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: FlexfillsApi
-Version: 0.1.14
+Version: 0.2.0
 Summary: This package is for using Flex Fills WebSocket communication with FlexFills trading services.
 Home-page: https://github.com/Flexfills-UI/Hermes
 Author: Djordje Nikolic
